@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="format-detection" content="telephone=no">
+<title>산재지표 산출 실습 - 경희대학교 예방의학교실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-text-size-adjust:100%; }
+  html { -webkit-tap-highlight-color:transparent; }
+  body {
+    font-family:'Noto Sans KR','Apple SD Gothic Neo','맑은 고딕','Malgun Gothic','Helvetica Neue',sans-serif;
+    background:#f0f2f5; color:#1a1a2e; min-height:100vh;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  }
+  .header { background:linear-gradient(135deg,#1B6B4A 0%,#2a9d6f 100%); color:#fff; padding:20px 30px; box-shadow:0 2px 10px rgba(0,0,0,.15); }
+  .header h1 { font-size:22px; font-weight:700; }
+  .header p { font-size:13px; opacity:.85; margin-top:4px; }
+  .container { max-width:900px; margin:30px auto; padding:0 20px; }
+  .card { background:#fff; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,.08); padding:24px; margin-bottom:20px; }
+  .card h2 { font-size:18px; font-weight:700; color:#1B6B4A; margin-bottom:16px; display:-webkit-flex; display:flex; -webkit-align-items:center; align-items:center; gap:8px; }
+  .card h2 .icon { font-size:22px; }
+
+  /* Login */
+  #loginSection { text-align:center; padding:40px 20px; }
+  #loginSection h2 { -webkit-justify-content:center; justify-content:center; font-size:22px; margin-bottom:8px; }
+  #loginSection .subtitle { color:#666; margin-bottom:30px; font-size:14px; }
+  .login-form { max-width:360px; margin:0 auto; }
+  .form-group { margin-bottom:16px; text-align:left; }
+  .form-group label { display:block; font-size:13px; font-weight:600; color:#444; margin-bottom:6px; }
+  /* CRITICAL: font-size 16px minimum prevents iOS auto-zoom on focus */
+  .form-group input, .form-group textarea, input[type="text"], textarea {
+    width:100%; padding:12px 14px; border:2px solid #e0e0e0; border-radius:8px;
+    font-size:16px; font-family:inherit; -webkit-transition:border-color .2s; transition:border-color .2s;
+    -webkit-appearance:none; -moz-appearance:none; appearance:none;
+    background-color:#fff;
+  }
+  .form-group input:focus, .form-group textarea:focus, input:focus, textarea:focus { outline:none; border-color:#1B6B4A; }
+  .btn-primary {
+    width:100%; padding:14px; background:linear-gradient(135deg,#1B6B4A,#2a9d6f); color:#fff;
+    border:none; border-radius:8px; font-size:16px; font-weight:600; font-family:inherit;
+    cursor:pointer; -webkit-transition:transform .1s,box-shadow .2s; transition:transform .1s,box-shadow .2s;
+    margin-top:10px; -webkit-appearance:none; appearance:none;
+  }
+  .btn-primary:active { transform:translateY(1px); }
+
+  /* Info grid */
+  .company-name { font-size:20px; font-weight:700; color:#1B6B4A; text-align:center; padding:12px; background:#f0faf5; border-radius:8px; margin-bottom:16px; }
+  .info-grid { display:-webkit-flex; display:flex; -webkit-flex-wrap:wrap; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
+  .info-item { -webkit-flex:1 1 calc(50% - 6px); flex:1 1 calc(50% - 6px); min-width:140px; background:#f8f9fa; padding:12px 16px; border-radius:8px; border-left:3px solid #1B6B4A; }
+  .info-item .label { font-size:12px; color:#888; font-weight:500; }
+  .info-item .value { font-size:18px; font-weight:700; color:#1a1a2e; margin-top:2px; }
+
+  /* Table */
+  .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -8px; padding:0 8px; }
+  .data-table { width:100%; border-collapse:collapse; font-size:13px; margin-top:12px; }
+  .data-table thead { background:#1B6B4A; color:#fff; }
+  .data-table th { padding:10px 6px; text-align:center; font-weight:600; font-size:12px; white-space:nowrap; }
+  .data-table td { padding:9px 6px; text-align:center; border-bottom:1px solid #eee; }
+  .data-table tbody tr:nth-child(even) { background:#fafafa; }
+  .summary-row { background:#f0faf5 !important; font-weight:700; }
+  .summary-row td { border-top:2px solid #1B6B4A; }
+
+  /* Calculator */
+  .calc-group { margin-bottom:20px; }
+  .calc-group label { display:block; font-size:14px; font-weight:600; color:#333; margin-bottom:8px; }
+  .calc-group .formula { font-size:12px; color:#888; margin-bottom:8px; padding:8px 12px; background:#f8f9fa; border-radius:6px; border-left:3px solid #ddd; }
+  .calc-input-row { display:-webkit-flex; display:flex; gap:10px; -webkit-align-items:center; align-items:center; }
+  .calc-input-row input {
+    -webkit-flex:1; flex:1; padding:10px 14px; border:2px solid #e0e0e0; border-radius:8px;
+    font-size:16px; font-family:inherit; -webkit-appearance:none; appearance:none;
+    background-color:#fff; min-width:0;
+  }
+  .calc-input-row input:focus { outline:none; border-color:#1B6B4A; }
+  .calc-input-row input.correct { border-color:#28a745; background-color:#f0fff4; }
+  .calc-input-row input.wrong { border-color:#dc3545; background-color:#fff5f5; }
+  .btn-check {
+    padding:10px 16px; background:#1B6B4A; color:#fff; border:none; border-radius:8px;
+    font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; white-space:nowrap;
+    -webkit-appearance:none; appearance:none; -webkit-flex-shrink:0; flex-shrink:0;
+  }
+  .btn-check:active { background:#155a3e; }
+  .btn-check:disabled { background:#999; cursor:default; }
+
+  /* Feedback */
+  .feedback { margin-top:8px; padding:10px 14px; border-radius:8px; font-size:13px; display:none; }
+  .feedback.hint { display:block; background:#fff8e1; border-left:3px solid #ffa726; color:#8d6e0f; }
+  .feedback.success { display:block; background:#e8f5e9; border-left:3px solid #28a745; color:#1b5e20; font-weight:600; }
+  .feedback.error { display:block; background:#fff5f5; border-left:3px solid #dc3545; color:#b71c1c; }
+
+  /* Reference */
+  .ref-table { width:100%; border-collapse:collapse; font-size:11px; margin-top:8px; }
+  .ref-table th, .ref-table td { padding:5px 4px; border:1px solid #ddd; text-align:center; }
+  .ref-table thead { background:#f0f0f0; }
+
+  /* Accordion */
+  .accordion-toggle {
+    width:100%; padding:12px 16px; background:#f8f9fa; border:1px solid #e0e0e0; border-radius:8px;
+    font-size:14px; font-weight:600; font-family:inherit; cursor:pointer; text-align:left;
+    display:-webkit-flex; display:flex; -webkit-justify-content:space-between; justify-content:space-between;
+    -webkit-align-items:center; align-items:center; color:#444;
+    -webkit-appearance:none; appearance:none;
+  }
+  .accordion-content { display:none; margin-top:10px; }
+  .accordion-content.open { display:block; }
+
+  /* Comparison chart */
+  .chart-container { margin:16px 0; }
+  .bar-group { margin-bottom:16px; }
+  .bar-label { font-size:13px; font-weight:600; color:#333; margin-bottom:6px; }
+  .bar-row { display:-webkit-flex; display:flex; -webkit-align-items:center; align-items:center; gap:8px; margin-bottom:4px; }
+  .bar-row-label { font-size:11px; color:#666; width:80px; text-align:right; -webkit-flex-shrink:0; flex-shrink:0; }
+  .bar-track { -webkit-flex:1; flex:1; height:24px; background:#f0f0f0; border-radius:4px; position:relative; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:4px; display:-webkit-flex; display:flex; -webkit-align-items:center; align-items:center; padding-left:8px; font-size:11px; font-weight:600; color:#fff; min-width:40px; -webkit-transition:width .6s ease; transition:width .6s ease; }
+  .bar-fill.national { background:linear-gradient(90deg,#999,#bbb); }
+  .bar-fill.company { background:linear-gradient(90deg,#1B6B4A,#2a9d6f); }
+  .bar-fill.company.high { background:linear-gradient(90deg,#d32f2f,#e57373); }
+  .bar-fill.company.medium { background:linear-gradient(90deg,#f57c00,#ffb74d); }
+
+  /* Interpretation */
+  .interp-box { padding:16px; border-radius:8px; margin-bottom:12px; font-size:14px; line-height:1.7; }
+  .interp-box.danger { background:#fff5f5; border:1px solid #e57373; }
+  .interp-box.warning { background:#fff8e1; border:1px solid #ffb74d; }
+  .interp-box.good { background:#e8f5e9; border:1px solid #81c784; }
+  .interp-title { font-weight:700; margin-bottom:6px; font-size:15px; }
+
+  /* Opinion / Textareas */
+  .opinion-area {
+    width:100%; min-height:100px; padding:14px; border:2px solid #e0e0e0; border-radius:8px;
+    font-size:16px; font-family:inherit; resize:none; line-height:1.6;
+    -webkit-appearance:none; appearance:none; background-color:#fff;
+  }
+  .opinion-area:focus { outline:none; border-color:#1B6B4A; }
+  .char-count { text-align:right; font-size:12px; color:#999; margin-top:4px; }
+
+  /* Congrats */
+  #congratsSection { display:none; }
+  .congrats-box { text-align:center; padding:24px; background:linear-gradient(135deg,#f0faf5,#e0f7ea); border-radius:12px; border:2px solid #1B6B4A; }
+  .congrats-box .big-check { font-size:48px; margin-bottom:12px; }
+  .congrats-box h3 { font-size:20px; color:#1B6B4A; margin-bottom:8px; }
+  .congrats-box p { color:#555; font-size:14px; margin-bottom:6px; }
+  .result-summary { display:-webkit-flex; display:flex; -webkit-flex-wrap:wrap; flex-wrap:wrap; gap:12px; margin:20px 0; }
+  .result-item { -webkit-flex:1 1 calc(33% - 8px); flex:1 1 calc(33% - 8px); min-width:120px; background:#fff; padding:14px; border-radius:8px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  .result-item .r-label { font-size:12px; color:#888; font-weight:500; }
+  .result-item .r-value { font-size:20px; font-weight:700; color:#1B6B4A; margin-top:4px; }
+  .btn-pdf {
+    padding:14px 36px; background:linear-gradient(135deg,#d32f2f,#e57373); color:#fff; border:none; border-radius:8px;
+    font-size:16px; font-weight:600; font-family:inherit; cursor:pointer; margin-top:16px;
+    -webkit-appearance:none; appearance:none;
+  }
+  .btn-pdf:active { opacity:.85; }
+  .btn-restart {
+    padding:10px 30px; background:#f5f5f5; color:#555; border:1px solid #ddd; border-radius:8px;
+    font-size:14px; font-family:inherit; cursor:pointer; margin-top:10px;
+    -webkit-appearance:none; appearance:none;
+  }
+
+  .note-box { background:#fff8e1; border-left:3px solid #ffa726; padding:12px 16px; border-radius:0 8px 8px 0; margin-top:12px; font-size:13px; color:#8d6e0f; }
+  .hidden { display:none !important; }
+  .progress-bar { display:-webkit-flex; display:flex; gap:8px; margin-bottom:20px; }
+  .progress-step { -webkit-flex:1; flex:1; height:6px; border-radius:3px; background:#e0e0e0; -webkit-transition:background .3s; transition:background .3s; }
+  .progress-step.done { background:#1B6B4A; }
+  .progress-step.active { background:#ffa726; }
+
+  /* National avg table */
+  .natl-table { width:100%; border-collapse:collapse; font-size:12px; margin:12px 0; }
+  .natl-table th { background:#1B6B4A; color:#fff; padding:6px 4px; text-align:center; font-size:11px; }
+  .natl-table td { padding:6px 4px; text-align:center; border-bottom:1px solid #eee; font-size:12px; }
+  .natl-table tbody tr:nth-child(even) { background:#fafafa; }
+  .natl-table .highlight { background:#f0faf5; font-weight:700; }
+
+  /* PDF hidden content (two pages) */
+  #pdfPage1, #pdfPage2 {
+    position:absolute; left:-9999px; top:0; width:750px; background:#fff; padding:40px;
+    font-family:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;
+  }
+  #pdfPage1 .pdf-header { text-align:center; border-bottom:2px solid #1B6B4A; padding-bottom:16px; margin-bottom:20px; }
+  #pdfPage1 .pdf-header h1 { font-size:22px; color:#1B6B4A; }
+  #pdfPage1 .pdf-header p { font-size:13px; color:#666; margin-top:4px; }
+  #pdfPage1 .pdf-info { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; font-size:14px; }
+  #pdfPage1 .pdf-info div { padding:8px 12px; background:#f8f9fa; border-radius:6px; }
+  .lbl { color:#888; font-size:12px; }
+  #pdfPage1 table, #pdfPage2 table { width:100%; border-collapse:collapse; font-size:12px; margin:12px 0; }
+  #pdfPage1 table th, #pdfPage2 table th { background:#1B6B4A; color:#fff; padding:8px 6px; text-align:center; font-size:11px; }
+  #pdfPage1 table td, #pdfPage2 table td { padding:7px 6px; text-align:center; border-bottom:1px solid #eee; }
+  #pdfPage1 table .sum-row { background:#f0faf5; font-weight:700; border-top:2px solid #1B6B4A; }
+  #pdfPage1 .pdf-results { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin:16px 0; }
+  #pdfPage1 .pdf-results div { text-align:center; padding:14px; border:2px solid #1B6B4A; border-radius:8px; }
+  #pdfPage1 .pdf-results .rl { font-size:12px; color:#888; }
+  #pdfPage1 .pdf-results .rv { font-size:20px; font-weight:700; color:#1B6B4A; }
+  #pdfPage2 .pdf-compare { margin:16px 0; }
+  .pdf-interp { padding:14px; background:#f8f9fa; border-radius:8px; margin:12px 0; font-size:13px; line-height:1.7; border-left:3px solid #1B6B4A; white-space:pre-wrap; }
+  .pdf-opinion { padding:14px; background:#f8f9fa; border-radius:8px; margin:12px 0; font-size:13px; line-height:1.7; border:1px solid #ddd; white-space:pre-wrap; }
+
+  /* Mobile responsive */
+  @media (max-width:600px) {
+    .container { padding:0 12px; margin:16px auto; }
+    .card { padding:18px; }
+    .header { padding:16px 20px; }
+    .header h1 { font-size:18px; }
+    .info-item { -webkit-flex:1 1 100%; flex:1 1 100%; }
+    .result-item { -webkit-flex:1 1 100%; flex:1 1 100%; }
+    .calc-input-row { -webkit-flex-direction:column; flex-direction:column; }
+    .calc-input-row input { width:100%; }
+    .btn-check { width:100%; }
+    .data-table { font-size:11px; }
+    .data-table th, .data-table td { padding:7px 4px; }
+    .bar-row-label { width:60px; font-size:10px; }
+    .ref-table { font-size:10px; }
+    .ref-table th, .ref-table td { padding:4px 2px; }
+    .natl-table { font-size:11px; }
+    .natl-table th, .natl-table td { padding:5px 3px; }
+    #loginSection { padding:30px 16px; }
+    #loginSection h2 { font-size:20px; }
+    .opinion-area { min-height:80px; }
+  }
+
+  /* iOS safe area */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    body { padding-bottom:env(safe-area-inset-bottom); }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>산업재해지표 산출 실습</h1>
+  <p>경희대학교 한의과대학 예방의학교실 | 2026학년도</p>
+</div>
+
+<div class="container">
+  <!-- LOGIN -->
+  <div class="card" id="loginSection">
+    <h2>산재지표 산출 실습에 오신 것을 환영합니다</h2>
+    <p class="subtitle">학번을 입력하면 고유한 가상 사업장 데이터가 생성됩니다.</p>
+    <div class="login-form">
+      <div class="form-group">
+        <label>학번</label>
+        <input type="text" id="studentId" placeholder="예: 2024123456" maxlength="20" autocomplete="off" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label>이름</label>
+        <input type="text" id="studentName" placeholder="예: 홍길동" maxlength="20" autocomplete="off">
+      </div>
+      <button class="btn-primary" onclick="startPractice()">실습 시작</button>
+      <div id="loginError" class="feedback error" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- MAIN PRACTICE -->
+  <div id="practiceSection" class="hidden">
+    <div class="progress-bar">
+      <div class="progress-step done" id="prog1"></div>
+      <div class="progress-step" id="prog2"></div>
+      <div class="progress-step" id="prog3"></div>
+      <div class="progress-step" id="prog4"></div>
+    </div>
+
+    <!-- Company Info -->
+    <div class="card">
+      <h2><span class="icon">🏭</span> 사업장 정보</h2>
+      <div class="company-name" id="companyNameDisplay"></div>
+      <div class="info-grid">
+        <div class="info-item"><div class="label">업종</div><div class="value" id="industryDisplay"></div></div>
+        <div class="info-item"><div class="label">전체 근로자 수</div><div class="value" id="workerCountDisplay"></div></div>
+        <div class="info-item"><div class="label">연간 근로시간 (1인)</div><div class="value">2,000시간</div></div>
+        <div class="info-item"><div class="label">기준 연도</div><div class="value">2025년</div></div>
+      </div>
+    </div>
+
+    <!-- Accident data -->
+    <div class="card">
+      <h2><span class="icon">📋</span> 산업재해 현황</h2>
+      <div class="table-wrap">
+        <table class="data-table" id="accidentTable">
+          <thead><tr><th>No.</th><th>부서</th><th>재해유형</th><th>재해자수</th><th>휴업일수</th><th>장해등급</th><th>사망</th></tr></thead>
+          <tbody id="accidentBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Reference tables -->
+    <div class="card">
+      <button class="accordion-toggle" onclick="toggleAccordion(this)">
+        <span>📖 장해등급별 근로손실일수 참고표</span><span class="arrow">▼</span>
+      </button>
+      <div class="accordion-content">
+        <div class="table-wrap">
+        <table class="ref-table">
+          <thead><tr><th>장해등급</th><th>1~3급</th><th>4급</th><th>5급</th><th>6급</th><th>7급</th><th>8급</th><th>9급</th><th>10급</th><th>11급</th><th>12급</th><th>13급</th><th>14급</th></tr></thead>
+          <tbody><tr><td>손실일수</td><td>7,500</td><td>5,500</td><td>4,000</td><td>3,000</td><td>2,200</td><td>1,500</td><td>1,000</td><td>600</td><td>400</td><td>200</td><td>100</td><td>50</td></tr></tbody>
+        </table>
+        </div>
+        <div class="note-box"><strong>참고:</strong> 사망 시 근로손실일수 = 7,500일</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <button class="accordion-toggle" onclick="toggleAccordion(this)">
+        <span>📐 산재지표 공식 안내</span><span class="arrow">▼</span>
+      </button>
+      <div class="accordion-content">
+        <div style="font-size:14px;line-height:1.8;padding:10px 0;">
+          <p><strong>연근로시간수</strong> = 근로자수 &times; 2,000시간</p>
+          <p style="margin-top:10px;"><strong>도수율 (Frequency Rate, FR)</strong></p>
+          <p style="padding-left:16px;">= (재해건수 &divide; 연근로시간수) &times; 1,000,000</p>
+          <p style="margin-top:10px;"><strong>강도율 (Severity Rate, SR)</strong></p>
+          <p style="padding-left:16px;">= (근로손실일수 &divide; 연근로시간수) &times; 1,000</p>
+          <p style="margin-top:10px;"><strong>천인율 (Thousand-person Incidence Rate, TIR)</strong></p>
+          <p style="padding-left:16px;">= (재해자수 &divide; 근로자수) &times; 1,000</p>
+          <p style="margin-top:12px;padding:10px;background:#f0faf5;border-radius:6px;">
+            <strong>근로손실일수</strong> = 휴업일 합계 + 장해등급별 손실일수 + 사망 &times; 7,500일
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calculator -->
+    <div class="card">
+      <h2><span class="icon">🧮</span> 산재지표 산출</h2>
+      <div class="calc-group">
+        <label>1. 연근로시간수 (시간)</label>
+        <div class="formula">연근로시간수 = 근로자수 &times; 2,000</div>
+        <div class="calc-input-row">
+          <input type="text" id="inputHours" placeholder="연근로시간수를 입력하세요" inputmode="numeric" autocomplete="off">
+          <button class="btn-check" id="btnHours" onclick="checkAnswer('hours')">확인</button>
+        </div>
+        <div class="feedback" id="fbHours"></div>
+      </div>
+      <div class="calc-group">
+        <label>2. 도수율 (FR) — 소수점 둘째 자리까지</label>
+        <div class="formula">도수율 = (재해건수 &divide; 연근로시간수) &times; 1,000,000</div>
+        <div class="calc-input-row">
+          <input type="text" id="inputFR" placeholder="도수율을 입력하세요" inputmode="decimal" autocomplete="off">
+          <button class="btn-check" id="btnFR" onclick="checkAnswer('fr')">확인</button>
+        </div>
+        <div class="feedback" id="fbFR"></div>
+      </div>
+      <div class="calc-group">
+        <label>3. 총 근로손실일수 (일)</label>
+        <div class="formula">근로손실일수 = 휴업일 합계 + 장해등급별 손실일수 + 사망 &times; 7,500</div>
+        <div class="calc-input-row">
+          <input type="text" id="inputLoss" placeholder="총 근로손실일수를 입력하세요" inputmode="numeric" autocomplete="off">
+          <button class="btn-check" id="btnLoss" onclick="checkAnswer('loss')">확인</button>
+        </div>
+        <div class="feedback" id="fbLoss"></div>
+      </div>
+      <div class="calc-group">
+        <label>4. 강도율 (SR) — 소수점 둘째 자리까지</label>
+        <div class="formula">강도율 = (근로손실일수 &divide; 연근로시간수) &times; 1,000</div>
+        <div class="calc-input-row">
+          <input type="text" id="inputSR" placeholder="강도율을 입력하세요" inputmode="decimal" autocomplete="off">
+          <button class="btn-check" id="btnSR" onclick="checkAnswer('sr')">확인</button>
+        </div>
+        <div class="feedback" id="fbSR"></div>
+      </div>
+      <div class="calc-group">
+        <label>5. 천인율 (TIR) — 소수점 둘째 자리까지</label>
+        <div class="formula">천인율 = (재해자수 &divide; 근로자수) &times; 1,000</div>
+        <div class="calc-input-row">
+          <input type="text" id="inputTIR" placeholder="천인율을 입력하세요" inputmode="decimal" autocomplete="off">
+          <button class="btn-check" id="btnTIR" onclick="checkAnswer('tir')">확인</button>
+        </div>
+        <div class="feedback" id="fbTIR"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTERPRETATION SECTION -->
+  <div id="interpSection" class="hidden">
+    <div class="progress-bar">
+      <div class="progress-step done"></div>
+      <div class="progress-step done"></div>
+      <div class="progress-step done"></div>
+      <div class="progress-step active" id="prog4b"></div>
+    </div>
+
+    <!-- Comparison with national avg -->
+    <div class="card">
+      <h2><span class="icon">📊</span> 우리나라 산재지표 평균과 비교</h2>
+      <p style="font-size:12px;color:#666;margin-bottom:12px;">출처: 고용노동부 산업재해현황(2020~2024), 산업재해현황분석 책자</p>
+      <div class="table-wrap">
+      <table class="natl-table">
+        <thead>
+          <tr><th>연도</th><th>근로자수(천명)</th><th>재해자수(명)</th><th>천인율</th><th>도수율</th><th>강도율</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>2020</td><td>18,974</td><td>108,379</td><td>5.71</td><td>3.28</td><td>0.52</td></tr>
+          <tr><td>2021</td><td>19,378</td><td>122,713</td><td>6.33</td><td>3.37</td><td>0.53</td></tr>
+          <tr><td>2022</td><td>20,228</td><td>128,379</td><td>6.35</td><td>3.50</td><td>0.56</td></tr>
+          <tr><td>2023</td><td>20,637</td><td>136,796</td><td>6.63</td><td>3.47</td><td>0.59</td></tr>
+          <tr class="highlight"><td>2024</td><td>21,421</td><td>142,771</td><td>6.67</td><td>3.53</td><td>0.61</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <div class="note-box" style="margin:12px 0;">
+        <strong>참고 - 제조업 평균(2024):</strong> 천인율 8.03 | 도수율 약 4.5 | 강도율 약 0.78<br>
+        <strong>건설업 평균(2024):</strong> 천인율 16.50 | 도수율 약 9.2 | 강도율 약 1.85
+      </div>
+
+      <h3 style="font-size:15px;font-weight:700;color:#333;margin:20px 0 12px;" id="chartTitle">내 사업장 vs 업종 평균(2024) 비교</h3>
+      <div class="chart-container" id="compChart"></div>
+    </div>
+
+    <!-- Student Interpretation -->
+    <div class="card">
+      <h2><span class="icon">🔍</span> 산출 결과 해석</h2>
+      <p style="font-size:13px;color:#666;margin-bottom:16px;">아래 비교 수치를 참고하여, 각 지표에 대한 해석을 직접 작성하세요. (각 항목 최소 30자)</p>
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:14px;font-weight:600;color:#333;margin-bottom:6px;">1. 도수율 (FR) 해석</label>
+        <div id="interpFRInfo" style="font-size:13px;color:#555;padding:10px 14px;background:#f8f9fa;border-radius:6px;margin-bottom:8px;border-left:3px solid #1B6B4A;"></div>
+        <div style="font-size:12px;color:#888;padding:8px 12px;background:#fafafa;border-radius:6px;margin-bottom:8px;border:1px dashed #ddd;">
+          <strong>예시)</strong> <span id="interpFRExample"></span>
+        </div>
+        <textarea class="opinion-area" id="interpFRText" placeholder="도수율에 대한 해석을 작성하세요..." oninput="updateInterpCount('FR')" style="min-height:80px;"></textarea>
+        <div class="char-count"><span id="interpFRCount">0</span>자 / 최소 30자</div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:14px;font-weight:600;color:#333;margin-bottom:6px;">2. 강도율 (SR) 해석</label>
+        <div id="interpSRInfo" style="font-size:13px;color:#555;padding:10px 14px;background:#f8f9fa;border-radius:6px;margin-bottom:8px;border-left:3px solid #1B6B4A;"></div>
+        <div style="font-size:12px;color:#888;padding:8px 12px;background:#fafafa;border-radius:6px;margin-bottom:8px;border:1px dashed #ddd;">
+          <strong>예시)</strong> <span id="interpSRExample"></span>
+        </div>
+        <textarea class="opinion-area" id="interpSRText" placeholder="강도율에 대한 해석을 작성하세요..." oninput="updateInterpCount('SR')" style="min-height:80px;"></textarea>
+        <div class="char-count"><span id="interpSRCount">0</span>자 / 최소 30자</div>
+      </div>
+
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:14px;font-weight:600;color:#333;margin-bottom:6px;">3. 천인율 (TIR) 해석</label>
+        <div id="interpTIRInfo" style="font-size:13px;color:#555;padding:10px 14px;background:#f8f9fa;border-radius:6px;margin-bottom:8px;border-left:3px solid #1B6B4A;"></div>
+        <div style="font-size:12px;color:#888;padding:8px 12px;background:#fafafa;border-radius:6px;margin-bottom:8px;border:1px dashed #ddd;">
+          <strong>예시)</strong> <span id="interpTIRExample"></span>
+        </div>
+        <textarea class="opinion-area" id="interpTIRText" placeholder="천인율에 대한 해석을 작성하세요..." oninput="updateInterpCount('TIR')" style="min-height:80px;"></textarea>
+        <div class="char-count"><span id="interpTIRCount">0</span>자 / 최소 30자</div>
+      </div>
+    </div>
+
+    <!-- Student opinion -->
+    <div class="card">
+      <h2><span class="icon">✍️</span> 개선 방안에 대한 의견</h2>
+      <p style="font-size:13px;color:#666;margin-bottom:12px;">위의 산재지표 분석 결과를 바탕으로, 이 사업장이 산업재해를 줄이기 위해 어떤 조치를 취해야 하는지 본인의 의견을 작성하세요. (최소 50자)</p>
+      <textarea class="opinion-area" id="opinionText" placeholder="예: 이 사업장은 도수율이 업종 평균 대비 높으므로, 재해 예방을 위해..." oninput="updateCharCount()"></textarea>
+      <div class="char-count"><span id="charCount">0</span>자 / 최소 50자</div>
+      <button class="btn-primary" onclick="submitOpinion()" id="btnSubmitOpinion" style="margin-top:12px;">제출 완료</button>
+      <div class="feedback" id="fbOpinion"></div>
+    </div>
+  </div>
+
+  <!-- CONGRATS -->
+  <div id="congratsSection">
+    <div class="card">
+      <div class="congrats-box">
+        <div class="big-check">🎉</div>
+        <h3>축하합니다! 실습을 완료하였습니다!</h3>
+        <p id="studentInfoDisplay"></p>
+        <p id="companyInfoDisplay" style="color:#1B6B4A;font-weight:600;"></p>
+      </div>
+      <div class="result-summary">
+        <div class="result-item"><div class="r-label">도수율 (FR)</div><div class="r-value" id="resFR"></div></div>
+        <div class="result-item"><div class="r-label">강도율 (SR)</div><div class="r-value" id="resSR"></div></div>
+        <div class="result-item"><div class="r-label">천인율 (TIR)</div><div class="r-value" id="resTIR"></div></div>
+      </div>
+      <div style="text-align:center;">
+        <button class="btn-primary" onclick="submitToSheet()" id="btnSubmit" style="width:auto;padding:14px 50px;font-size:17px;">제출하기</button>
+        <p id="submitStatus" style="font-size:13px;color:#888;margin-top:10px;display:none;"></p>
+        <div id="submitSuccess" style="display:none;margin-top:16px;padding:16px;background:#e8f5e9;border-radius:8px;border:2px solid #28a745;">
+          <p style="font-size:16px;font-weight:700;color:#1b5e20;">제출 완료!</p>
+          <p style="font-size:13px;color:#555;margin-top:4px;">실습 결과가 성공적으로 제출되었습니다.</p>
+        </div>
+        <br>
+        <button class="btn-restart" onclick="generatePDF()" id="btnPDF" style="margin-top:8px;">📄 결과 PDF 저장 (선택)</button>
+        <p id="pdfStatus" style="font-size:12px;color:#888;margin-top:6px;display:none;"></p>
+        <br><button class="btn-restart" onclick="restart()">🔄 처음부터 다시하기</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PDF Page 1 (offscreen) -->
+<div id="pdfPage1">
+  <div class="pdf-header">
+    <h1>산업재해지표 산출 실습 결과</h1>
+    <p>경희대학교 한의과대학 예방의학교실 | 2026학년도</p>
+  </div>
+  <div class="pdf-info" id="pdfInfo"></div>
+  <h3 style="font-size:15px;color:#1B6B4A;margin-bottom:8px;">산업재해 현황</h3>
+  <table id="pdfTable"></table>
+  <h3 style="font-size:15px;color:#1B6B4A;margin:16px 0 8px;">산출 결과</h3>
+  <div class="pdf-results" id="pdfResults"></div>
+</div>
+
+<!-- PDF Page 2 (offscreen) -->
+<div id="pdfPage2">
+  <div style="text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #1B6B4A;">
+    <h2 style="font-size:18px;color:#1B6B4A;margin:0;">산재지표 비교 분석 및 해석</h2>
+    <p style="font-size:12px;color:#888;margin-top:4px;" id="pdfPage2Student"></p>
+  </div>
+  <h3 style="font-size:15px;color:#1B6B4A;margin:0 0 8px;" id="pdfCompareTitle">업종 평균 대비 비교 (2024년 기준)</h3>
+  <div class="pdf-compare" id="pdfCompare"></div>
+  <h3 style="font-size:15px;color:#1B6B4A;margin:16px 0 8px;">도수율 (FR) 해석</h3>
+  <div class="pdf-interp" id="pdfInterpFR"></div>
+  <h3 style="font-size:15px;color:#1B6B4A;margin:16px 0 8px;">강도율 (SR) 해석</h3>
+  <div class="pdf-interp" id="pdfInterpSR"></div>
+  <h3 style="font-size:15px;color:#1B6B4A;margin:16px 0 8px;">천인율 (TIR) 해석</h3>
+  <div class="pdf-interp" id="pdfInterpTIR"></div>
+  <h3 style="font-size:15px;color:#1B6B4A;margin:16px 0 8px;">개선 방안에 대한 의견</h3>
+  <div class="pdf-opinion" id="pdfOpinion"></div>
+  <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid #ddd;font-size:12px;color:#999;">
+    <p>제출일: <span id="pdfDate"></span></p>
+    <p style="margin-top:4px;">본 문서는 산재지표 산출 실습 시스템에 의해 자동 생성되었습니다.</p>
+  </div>
+</div>
+
+<script>
+// ======== PRNG ========
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function hashString(str) {
+  var h = 0;
+  for (var i = 0; i < str.length; i++) { h = ((h << 5) - h) + str.charCodeAt(i); h |= 0; }
+  return Math.abs(h);
+}
+
+// ======== National averages ========
+var NATL_AVG = {
+  fr: 3.53, sr: 0.61, tir: 6.67,
+  mfg_fr: 4.5, mfg_sr: 0.78, mfg_tir: 8.03,
+  con_fr: 9.2, con_sr: 1.85, con_tir: 16.50
+};
+
+// ======== Data generation ========
+var LAST_NAMES = ['한진','대성','삼화','동양','한일','신흥','태양','동해','남성','중앙','대한','현진','영진','일진','동진','세진','한성','태성','정일','광명','동성','성우','대진','한양','건영','영풍','동원','신한','세한','유성','보성','삼진','태광','한신','동부','일성','정우','성진','국제','동방','대명','삼양','서진','남해'];
+var SUFFIXES = ['매뉴팩처링','산업','테크놀로지','중공업','기계','정밀','엔지니어링','철강','화학','전자','금속','소재','에너지'];
+var INDUSTRIES_MFG = ['제조업 - 금속가공','제조업 - 기계','제조업 - 화학','제조업 - 전자부품','제조업 - 자동차부품','제조업 - 식품가공','제조업 - 섬유'];
+var INDUSTRIES_CON = ['건설업 - 건축','건설업 - 토목'];
+var INDUSTRIES_OTHER = ['운수창고통신업','기타의사업 - 도소매'];
+var DEPARTMENTS = ['조립 라인','사무/관리','품질 관리','생산 지원','물류/창고','연구 개발','도장/표면처리','용접','프레스','설비 보전','포장/출하'];
+var ACCIDENT_TYPES = ['추락','넘어짐','베임/찔림','물체에 맞음','끼임','근골격계 부담작업','화학물질 노출','감전','부딪힘','무리한 동작','깔림/뒤집힘'];
+var DISABILITY_DAYS = {1:7500,2:7500,3:7500,4:5500,5:4000,6:3000,7:2200,8:1500,9:1000,10:600,11:400,12:200,13:100,14:50};
+
+var RNG, companyData={}, correctAnswers={}, attempts={hours:0,fr:0,loss:0,sr:0,tir:0};
+var solved={hours:false,fr:false,loss:false,sr:false,tir:false};
+var studentId='', studentName='', opinionText='', interpTexts={fr:'',sr:'',tir:''};
+
+function pick(arr) { return arr[Math.floor(RNG()*arr.length)]; }
+function randInt(min,max) { return Math.floor(RNG()*(max-min+1))+min; }
+
+function generateCompany(sid) {
+  var seed = hashString(sid);
+  RNG = mulberry32(seed);
+  var name = pick(LAST_NAMES)+' '+pick(SUFFIXES);
+  var indRoll = RNG();
+  var industry;
+  if (indRoll < 0.70) industry = pick(INDUSTRIES_MFG);
+  else if (indRoll < 0.85) industry = pick(INDUSTRIES_CON);
+  else industry = pick(INDUSTRIES_OTHER);
+
+  var workerCount = randInt(150, 500);
+  var totalHours = workerCount * 2000;
+  var frTarget;
+  if (industry.indexOf('제조업') === 0) frTarget = 2 + RNG() * 6;
+  else if (industry.indexOf('건설업') === 0) frTarget = 4 + RNG() * 10;
+  else frTarget = 1.5 + RNG() * 4.5;
+
+  var accidentCount = Math.max(2, Math.round(frTarget * totalHours / 1000000));
+  var depts = DEPARTMENTS.slice();
+  var i, j, tmp;
+  for (i = depts.length - 1; i > 0; i--) {
+    j = Math.floor(RNG() * (i + 1));
+    tmp = depts[i]; depts[i] = depts[j]; depts[j] = tmp;
+  }
+
+  var events = [];
+  var totalVictims = 0, totalSickDays = 0, totalDisabilityLoss = 0, totalDeaths = 0;
+  var hasDisability = RNG() < 0.45;
+  var hasDeath = RNG() < 0.08;
+  var disabilityGrade = hasDisability ? randInt(7, 14) : 0;
+
+  for (i = 0; i < accidentCount; i++) {
+    var dept = depts[i % depts.length];
+    var type = pick(ACCIDENT_TYPES);
+    var victims = 1;
+    totalVictims += victims;
+    var sickDays = 0, disability = 0, death = false;
+    if (i === 0 && hasDeath) {
+      death = true; totalDeaths += 1;
+    } else if (i === 1 && hasDisability) {
+      disability = disabilityGrade;
+      totalDisabilityLoss += DISABILITY_DAYS[disability];
+    } else {
+      if (RNG() < 0.10) { sickDays = 0; }
+      else { sickDays = randInt(4, 90); totalSickDays += sickDays; }
+    }
+    events.push({no:i+1, dept:dept, type:type, victims:victims, sickDays:sickDays, disability:disability, death:death});
+  }
+
+  var totalLossDays = totalSickDays + totalDisabilityLoss + (totalDeaths * 7500);
+  var fr = (accidentCount / totalHours) * 1000000;
+  var sr = (totalLossDays / totalHours) * 1000;
+  var tir = (totalVictims / workerCount) * 1000;
+
+  companyData = {
+    name:name, industry:industry, workerCount:workerCount, totalHours:totalHours,
+    events:events, accidentCount:accidentCount, totalVictims:totalVictims,
+    totalSickDays:totalSickDays, totalDisabilityLoss:totalDisabilityLoss,
+    totalDeaths:totalDeaths, totalLossDays:totalLossDays,
+    hasDisability:hasDisability, disabilityGrade:disabilityGrade, hasDeath:hasDeath
+  };
+  correctAnswers = {
+    hours: totalHours,
+    fr: Math.round(fr*100)/100,
+    loss: totalLossDays,
+    sr: Math.round(sr*100)/100,
+    tir: Math.round(tir*100)/100
+  };
+}
+
+// ======== UI ========
+function startPractice() {
+  studentId = document.getElementById('studentId').value.trim();
+  studentName = document.getElementById('studentName').value.trim();
+  if (!studentId || !studentName) { showFeedback('loginError','error','학번과 이름을 모두 입력해 주세요.'); return; }
+  if (studentId.length < 4) { showFeedback('loginError','error','올바른 학번을 입력해 주세요.'); return; }
+  generateCompany(studentId);
+  renderCompanyData();
+  document.getElementById('loginSection').classList.add('hidden');
+  document.getElementById('practiceSection').classList.remove('hidden');
+  document.getElementById('prog2').classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showFeedback(id, type, msg) {
+  var el = document.getElementById(id);
+  el.className = 'feedback ' + type;
+  el.innerHTML = msg;
+  el.style.display = 'block';
+}
+
+function renderCompanyData() {
+  document.getElementById('companyNameDisplay').textContent = companyData.name;
+  document.getElementById('industryDisplay').textContent = companyData.industry;
+  document.getElementById('workerCountDisplay').textContent = companyData.workerCount.toLocaleString()+'명';
+  var tbody = document.getElementById('accidentBody');
+  tbody.innerHTML = '';
+  companyData.events.forEach(function(e) {
+    var tr = document.createElement('tr');
+    var sickText = (e.death || e.disability > 0) ? '-' : (e.sickDays === 0 ? '-' : e.sickDays.toLocaleString()+'일');
+    tr.innerHTML = '<td>'+e.no+'</td><td>'+e.dept+'</td><td>'+e.type+'</td><td>'+e.victims+'명</td><td>'+sickText+'</td><td>'+(e.disability>0?e.disability+'급':'-')+'</td><td>'+(e.death?'사망':'-')+'</td>';
+    tbody.appendChild(tr);
+  });
+  var sumTr = document.createElement('tr');
+  sumTr.className = 'summary-row';
+  var sickDisp = companyData.totalSickDays > 0 ? companyData.totalSickDays.toLocaleString()+'일' : '-';
+  var disDisp = companyData.hasDisability ? companyData.disabilityGrade+'급' : '-';
+  sumTr.innerHTML = '<td colspan="2"><strong>합계</strong></td><td>'+companyData.accidentCount+'건</td><td>'+companyData.totalVictims+'명</td><td>'+sickDisp+'</td><td>'+disDisp+'</td><td>'+(companyData.totalDeaths>0?companyData.totalDeaths+'명':'-')+'</td>';
+  tbody.appendChild(sumTr);
+}
+
+function toggleAccordion(btn) {
+  var c = btn.nextElementSibling;
+  c.classList.toggle('open');
+  btn.querySelector('.arrow').textContent = c.classList.contains('open') ? '▲' : '▼';
+}
+
+function checkAnswer(type) {
+  var inputMap = {hours:'inputHours',fr:'inputFR',loss:'inputLoss',sr:'inputSR',tir:'inputTIR'};
+  var fbMap = {hours:'fbHours',fr:'fbFR',loss:'fbLoss',sr:'fbSR',tir:'fbTIR'};
+  var btnMap = {hours:'btnHours',fr:'btnFR',loss:'btnLoss',sr:'btnSR',tir:'btnTIR'};
+  if (solved[type]) return;
+  var raw = document.getElementById(inputMap[type]).value.trim().replace(/,/g,'');
+  var userVal = parseFloat(raw);
+  if (isNaN(userVal) || raw === '') { showFeedback(fbMap[type],'error','숫자를 입력해 주세요.'); return; }
+  var correct = correctAnswers[type];
+  attempts[type]++;
+  var isCorrect = (type==='hours'||type==='loss') ? (userVal===correct) : Math.abs(userVal-correct)<=0.02;
+  if (isCorrect) {
+    var msgs = ['정확합니다! 훌륭해요!','맞았습니다! 잘 하셨어요!','정답입니다! 완벽해요!','훌륭합니다!'];
+    showFeedback(fbMap[type],'success', msgs[Math.floor(Math.random()*msgs.length)]);
+    solved[type] = true;
+    document.getElementById(inputMap[type]).classList.add('correct');
+    document.getElementById(inputMap[type]).disabled = true;
+    document.getElementById(btnMap[type]).disabled = true;
+    checkAllCalcSolved();
+  } else {
+    document.getElementById(inputMap[type]).classList.add('wrong');
+    setTimeout(function(){ document.getElementById(inputMap[type]).classList.remove('wrong'); }, 600);
+    showFeedback(fbMap[type],'hint',getHints(type,attempts[type],userVal));
+  }
+}
+
+function getHints(type,att,uv) {
+  var d=companyData, c=correctAnswers;
+  if (type==='hours') {
+    if (att===1) return '<strong>힌트 1:</strong> 연근로시간수 = 근로자수 × 2,000시간입니다.';
+    if (att===2) return '<strong>힌트 2:</strong> '+d.workerCount+' × 2,000 = ?';
+    return '<strong>정답:</strong> <strong>'+c.hours.toLocaleString()+'</strong>시간';
+  }
+  if (type==='fr') {
+    if (att===1) return '<strong>힌트 1:</strong> 재해건수('+d.accidentCount+'건) ÷ 연근로시간수 × 1,000,000';
+    if (att===2) return '<strong>힌트 2:</strong> '+d.accidentCount+' ÷ '+c.hours.toLocaleString()+' × 1,000,000 = ?';
+    return '<strong>정답:</strong> <strong>'+c.fr+'</strong>';
+  }
+  if (type==='loss') {
+    if (att===1) return '<strong>힌트 1:</strong> 근로손실일수 = 휴업일 합계 + 장해등급별 손실일수 + 사망×7,500';
+    if (att===2) {
+      var m='<strong>힌트 2:</strong> 휴업일 합계='+d.totalSickDays.toLocaleString()+'일. ';
+      if(d.hasDisability) m+='장해 '+d.disabilityGrade+'급 → 참고표 확인. ';
+      if(d.totalDeaths>0) m+='사망 '+d.totalDeaths+'명 × 7,500 = '+(d.totalDeaths*7500).toLocaleString()+'일.';
+      return m;
+    }
+    if (att===3) {
+      var ts=[d.totalSickDays.toLocaleString()];
+      if(d.hasDisability) ts.push(DISABILITY_DAYS[d.disabilityGrade].toLocaleString());
+      if(d.totalDeaths>0) ts.push((d.totalDeaths*7500).toLocaleString());
+      return '<strong>힌트 3:</strong> '+ts.join(' + ')+' = ?';
+    }
+    return '<strong>정답:</strong> <strong>'+c.loss.toLocaleString()+'</strong>일';
+  }
+  if (type==='sr') {
+    if (att===1) return '<strong>힌트 1:</strong> '+c.loss.toLocaleString()+' ÷ '+c.hours.toLocaleString()+' × 1,000';
+    return '<strong>정답:</strong> <strong>'+c.sr+'</strong>';
+  }
+  if (type==='tir') {
+    if (att===1) return '<strong>힌트 1:</strong> 재해자수('+d.totalVictims+'명) ÷ 근로자수('+d.workerCount+'명) × 1,000';
+    return '<strong>정답:</strong> <strong>'+c.tir+'</strong>';
+  }
+}
+
+function checkAllCalcSolved() {
+  if (solved.hours && solved.fr && solved.loss && solved.sr && solved.tir) {
+    document.getElementById('prog2').classList.remove('active');
+    document.getElementById('prog2').classList.add('done');
+    document.getElementById('prog3').classList.add('done');
+    setTimeout(function(){
+      document.getElementById('practiceSection').classList.add('hidden');
+      document.getElementById('interpSection').classList.remove('hidden');
+      renderComparison();
+      renderInterpretation();
+      window.scrollTo(0, 0);
+    }, 800);
+  }
+}
+
+// ======== Comparison & Interpretation ========
+function getIndustryRef() {
+  var d = companyData;
+  if (d.industry.indexOf('제조업') === 0) return {fr:NATL_AVG.mfg_fr, sr:NATL_AVG.mfg_sr, tir:NATL_AVG.mfg_tir, name:'제조업'};
+  if (d.industry.indexOf('건설업') === 0) return {fr:NATL_AVG.con_fr, sr:NATL_AVG.con_sr, tir:NATL_AVG.con_tir, name:'건설업'};
+  return {fr:NATL_AVG.fr, sr:NATL_AVG.sr, tir:NATL_AVG.tir, name:'전산업'};
+}
+
+function renderComparison() {
+  var c = correctAnswers, ref = getIndustryRef();
+  document.getElementById('chartTitle').textContent = '내 사업장 vs ' + ref.name + ' 평균(2024) 비교';
+  var metrics = [
+    {label:'도수율 (FR)', mine:c.fr, avg:ref.fr},
+    {label:'강도율 (SR)', mine:c.sr, avg:ref.sr},
+    {label:'천인율 (TIR)', mine:c.tir, avg:ref.tir}
+  ];
+  var html = '';
+  metrics.forEach(function(m) {
+    var maxVal = Math.max(m.mine, m.avg) * 1.3;
+    var avgPct = Math.min(100, (m.avg/maxVal)*100);
+    var minePct = Math.min(100, (m.mine/maxVal)*100);
+    var ratio = m.mine / m.avg;
+    var colorClass = 'company';
+    if (ratio > 2.5) colorClass = 'company high';
+    else if (ratio > 1.3) colorClass = 'company medium';
+    html += '<div class="bar-group"><div class="bar-label">'+m.label+'</div>'+
+      '<div class="bar-row"><div class="bar-row-label">'+ref.name+' 평균</div><div class="bar-track"><div class="bar-fill national" style="width:'+avgPct+'%">'+m.avg+'</div></div></div>'+
+      '<div class="bar-row"><div class="bar-row-label">내 사업장</div><div class="bar-track"><div class="bar-fill '+colorClass+'" style="width:'+minePct+'%">'+m.mine+'</div></div></div></div>';
+  });
+  document.getElementById('compChart').innerHTML = html;
+}
+
+function renderInterpretation() {
+  var c = correctAnswers, d = companyData, ref = getIndustryRef();
+  var frR = (c.fr / ref.fr).toFixed(1), srR = (c.sr / ref.sr).toFixed(1), tirR = (c.tir / ref.tir).toFixed(1);
+  document.getElementById('interpFRInfo').innerHTML =
+    '내 사업장 도수율: <strong>'+c.fr+'</strong> | '+ref.name+' 평균: <strong>'+ref.fr+'</strong> | 배율: <strong>'+frR+'배</strong>';
+  document.getElementById('interpSRInfo').innerHTML =
+    '내 사업장 강도율: <strong>'+c.sr+'</strong> | '+ref.name+' 평균: <strong>'+ref.sr+'</strong> | 배율: <strong>'+srR+'배</strong>'
+    + (d.hasDeath ? ' | <em style="color:#d32f2f;">사망재해 발생</em>' : '')
+    + (d.hasDisability ? ' | <em style="color:#f57c00;">장해 '+d.disabilityGrade+'급 발생</em>' : '');
+  document.getElementById('interpTIRInfo').innerHTML =
+    '내 사업장 천인율: <strong>'+c.tir+'</strong> | '+ref.name+' 평균: <strong>'+ref.tir+'</strong> | 배율: <strong>'+tirR+'배</strong>';
+  document.getElementById('interpFRExample').textContent =
+    '(예: A사의 도수율 7.2는 제조업 평균 4.5의 약 1.6배로, 100만 근로시간당 재해 빈도가 업종 평균보다 높은 편이다. 이는 작업 현장의 안전수칙 준수 여부를 재점검할 필요가 있음을 시사한다.)';
+  document.getElementById('interpSRExample').textContent =
+    '(예: B사의 강도율 1.85는 건설업 평균 1.85와 유사한 수준으로, 재해 발생 시 근로손실일수가 업종 평균과 비슷하게 관리되고 있다. 다만 장해 11급 재해가 발생하여 이에 대한 재발 방지 대책이 필요하다.)';
+  document.getElementById('interpTIRExample').textContent =
+    '(예: C사의 천인율 12.5는 전산업 평균 6.67의 약 1.9배로, 근로자 1,000명당 재해자 수가 많은 편이다. 이는 전반적인 안전보건 교육 강화와 작업환경 개선이 필요함을 의미한다.)';
+}
+
+function updateInterpCount(type) {
+  document.getElementById('interp'+type+'Count').textContent = document.getElementById('interp'+type+'Text').value.length;
+}
+function updateCharCount() {
+  document.getElementById('charCount').textContent = document.getElementById('opinionText').value.length;
+}
+
+function submitOpinion() {
+  var frText = document.getElementById('interpFRText').value.trim();
+  var srText = document.getElementById('interpSRText').value.trim();
+  var tirText = document.getElementById('interpTIRText').value.trim();
+  if (frText.length < 30) { showFeedback('fbOpinion','error','도수율 해석을 최소 30자 이상 작성해 주세요.'); return; }
+  if (srText.length < 30) { showFeedback('fbOpinion','error','강도율 해석을 최소 30자 이상 작성해 주세요.'); return; }
+  if (tirText.length < 30) { showFeedback('fbOpinion','error','천인율 해석을 최소 30자 이상 작성해 주세요.'); return; }
+  var text = document.getElementById('opinionText').value.trim();
+  if (text.length < 50) { showFeedback('fbOpinion','error','개선 방안 의견을 최소 50자 이상 작성해 주세요.'); return; }
+  interpTexts = {fr: frText, sr: srText, tir: tirText};
+  opinionText = text;
+  document.getElementById('prog4b').classList.remove('active');
+  document.getElementById('prog4b').classList.add('done');
+  showFeedback('fbOpinion','success','의견이 제출되었습니다! 아래에서 결과를 확인하세요.');
+  document.getElementById('btnSubmitOpinion').disabled = true;
+  document.getElementById('opinionText').disabled = true;
+  document.getElementById('interpFRText').disabled = true;
+  document.getElementById('interpSRText').disabled = true;
+  document.getElementById('interpTIRText').disabled = true;
+  setTimeout(function(){
+    document.getElementById('interpSection').classList.add('hidden');
+    document.getElementById('congratsSection').style.display = 'block';
+    document.getElementById('studentInfoDisplay').textContent = studentName+' ('+studentId+')';
+    document.getElementById('companyInfoDisplay').textContent = companyData.name+' | '+companyData.industry;
+    document.getElementById('resFR').textContent = correctAnswers.fr;
+    document.getElementById('resSR').textContent = correctAnswers.sr;
+    document.getElementById('resTIR').textContent = correctAnswers.tir;
+    window.scrollTo(0, 0);
+  }, 800);
+}
+
+function restart() { location.reload(); }
+
+// ======== Google Sheets submission ========
+// INSTRUCTIONS: Replace this URL with your Google Apps Script Web App URL
+var APPS_SCRIPT_URL = 'PASTE_YOUR_APPS_SCRIPT_URL_HERE';
+
+function submitToSheet() {
+  if (APPS_SCRIPT_URL === 'PASTE_YOUR_APPS_SCRIPT_URL_HERE') {
+    alert('제출 기능이 아직 설정되지 않았습니다.\n교수님께 문의해 주세요.');
+    return;
+  }
+  var btn = document.getElementById('btnSubmit');
+  var status = document.getElementById('submitStatus');
+  btn.disabled = true;
+  btn.textContent = '제출 중...';
+  status.style.display = 'block';
+  status.textContent = '서버에 전송 중입니다...';
+  status.style.color = '#888';
+
+  var d = companyData, c = correctAnswers, ref = getIndustryRef();
+  var payload = {
+    timestamp: new Date().toLocaleString('ko-KR'),
+    studentId: studentId,
+    studentName: studentName,
+    companyName: d.name,
+    industry: d.industry,
+    workerCount: d.workerCount,
+    accidentCount: d.accidentCount,
+    totalVictims: d.totalVictims,
+    totalDeaths: d.totalDeaths,
+    hasDisability: d.hasDisability ? d.disabilityGrade + '급' : '없음',
+    totalSickDays: d.totalSickDays,
+    totalLossDays: d.totalLossDays,
+    totalHours: c.hours,
+    fr: c.fr,
+    sr: c.sr,
+    tir: c.tir,
+    refIndustry: ref.name,
+    refFR: ref.fr,
+    refSR: ref.sr,
+    refTIR: ref.tir,
+    frRatio: (c.fr / ref.fr).toFixed(1),
+    srRatio: (c.sr / ref.sr).toFixed(1),
+    tirRatio: (c.tir / ref.tir).toFixed(1),
+    interpFR: interpTexts.fr,
+    interpSR: interpTexts.sr,
+    interpTIR: interpTexts.tir,
+    opinion: opinionText
+  };
+
+  // Google Apps Script로 전송 (form 방식 - 모든 브라우저 호환)
+  var form = document.createElement('form');
+  form.method = 'POST';
+  form.action = APPS_SCRIPT_URL;
+  form.target = 'submitFrame';
+  var input = document.createElement('input');
+  input.type = 'hidden';
+  input.name = 'data';
+  input.value = JSON.stringify(payload);
+  form.appendChild(input);
+
+  // 숨겨진 iframe으로 제출 (페이지 이동 없음)
+  var iframe = document.getElementById('submitFrame');
+  if (!iframe) {
+    iframe = document.createElement('iframe');
+    iframe.name = 'submitFrame';
+    iframe.id = 'submitFrame';
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+  }
+
+  try {
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+    // 2초 후 성공 표시 (iframe 응답 대기)
+    setTimeout(function() {
+      status.style.display = 'none';
+      document.getElementById('submitSuccess').style.display = 'block';
+      btn.textContent = '제출 완료';
+      btn.style.background = '#28a745';
+    }, 2000);
+  } catch(err) {
+    status.textContent = '제출 중 오류가 발생했습니다. 다시 시도해 주세요.';
+    status.style.color = '#d32f2f';
+    btn.disabled = false;
+    btn.textContent = '다시 제출하기';
+  }
+}
+
+// ======== PDF (lazy-loaded) ========
+var pdfLibsLoaded = false;
+function loadPdfLibs(callback) {
+  if (pdfLibsLoaded) { callback(); return; }
+  var status = document.getElementById('pdfStatus');
+  status.style.display = 'block';
+  status.textContent = 'PDF 라이브러리 로딩 중...';
+
+  var s1 = document.createElement('script');
+  s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s1.onload = function() {
+    var s2 = document.createElement('script');
+    s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    s2.onload = function() {
+      pdfLibsLoaded = true;
+      status.textContent = '';
+      callback();
+    };
+    s2.onerror = function() {
+      status.textContent = 'PDF 라이브러리 로딩 실패. 인쇄 기능을 이용해 주세요.';
+      alert('PDF 라이브러리를 불러올 수 없습니다.\n브라우저의 인쇄 기능(공유 > 프린트)을 이용하여 PDF로 저장해 주세요.');
+    };
+    document.body.appendChild(s2);
+  };
+  s1.onerror = function() {
+    status.textContent = 'PDF 라이브러리 로딩 실패. 인쇄 기능을 이용해 주세요.';
+    alert('PDF 라이브러리를 불러올 수 없습니다.\n브라우저의 인쇄 기능(공유 > 프린트)을 이용하여 PDF로 저장해 주세요.');
+  };
+  document.body.appendChild(s1);
+}
+
+function generatePDF() {
+  loadPdfLibs(function() { doGeneratePDF(); });
+}
+
+async function doGeneratePDF() {
+  var d=companyData, c=correctAnswers, ref=getIndustryRef();
+  var btn = document.getElementById('btnPDF');
+  var status = document.getElementById('pdfStatus');
+  btn.disabled = true;
+  btn.textContent = 'PDF 생성 중...';
+  status.style.display = 'block';
+  status.textContent = '잠시만 기다려 주세요...';
+
+  // Page 1
+  document.getElementById('pdfInfo').innerHTML =
+    '<div><span class="lbl">학번</span><br><strong>'+studentId+'</strong></div>'+
+    '<div><span class="lbl">이름</span><br><strong>'+studentName+'</strong></div>'+
+    '<div><span class="lbl">사업장</span><br><strong>'+d.name+'</strong></div>'+
+    '<div><span class="lbl">업종</span><br><strong>'+d.industry+'</strong></div>'+
+    '<div><span class="lbl">근로자 수</span><br><strong>'+d.workerCount.toLocaleString()+'명</strong></div>'+
+    '<div><span class="lbl">연근로시간수</span><br><strong>'+c.hours.toLocaleString()+'시간</strong></div>';
+
+  var tbl='<thead><tr><th>No.</th><th>부서</th><th>재해유형</th><th>재해자수</th><th>휴업일수</th><th>장해등급</th><th>사망</th></tr></thead><tbody>';
+  d.events.forEach(function(e){
+    var st = (e.death||e.disability>0) ? '-' : (e.sickDays===0?'-':e.sickDays.toLocaleString()+'일');
+    tbl+='<tr><td>'+e.no+'</td><td>'+e.dept+'</td><td>'+e.type+'</td><td>'+e.victims+'명</td><td>'+st+'</td><td>'+(e.disability>0?e.disability+'급':'-')+'</td><td>'+(e.death?'사망':'-')+'</td></tr>';
+  });
+  var sD=d.totalSickDays>0?d.totalSickDays.toLocaleString()+'일':'-';
+  var dD=d.hasDisability?d.disabilityGrade+'급':'-';
+  tbl+='<tr class="sum-row"><td colspan="2"><strong>합계</strong></td><td>'+d.accidentCount+'건</td><td>'+d.totalVictims+'명</td><td>'+sD+'</td><td>'+dD+'</td><td>'+(d.totalDeaths>0?d.totalDeaths+'명':'-')+'</td></tr></tbody>';
+  document.getElementById('pdfTable').innerHTML = tbl;
+  document.getElementById('pdfResults').innerHTML =
+    '<div><div class="rl">도수율 (FR)</div><div class="rv">'+c.fr+'</div></div>'+
+    '<div><div class="rl">강도율 (SR)</div><div class="rv">'+c.sr+'</div></div>'+
+    '<div><div class="rl">천인율 (TIR)</div><div class="rv">'+c.tir+'</div></div>';
+
+  // Page 2
+  document.getElementById('pdfPage2Student').textContent = studentName+' ('+studentId+') | '+d.name+' | '+d.industry;
+  document.getElementById('pdfCompareTitle').textContent = ref.name+' 평균 대비 비교 (2024년 기준)';
+  document.getElementById('pdfCompare').innerHTML = '<table><thead><tr><th>지표</th><th>내 사업장</th><th>'+ref.name+' 평균</th><th>배율</th></tr></thead><tbody>'+
+    '<tr><td>도수율</td><td><strong>'+c.fr+'</strong></td><td>'+ref.fr+'</td><td>'+(c.fr/ref.fr).toFixed(1)+'배</td></tr>'+
+    '<tr><td>강도율</td><td><strong>'+c.sr+'</strong></td><td>'+ref.sr+'</td><td>'+(c.sr/ref.sr).toFixed(1)+'배</td></tr>'+
+    '<tr><td>천인율</td><td><strong>'+c.tir+'</strong></td><td>'+ref.tir+'</td><td>'+(c.tir/ref.tir).toFixed(1)+'배</td></tr></tbody></table>';
+
+  document.getElementById('pdfInterpFR').textContent = interpTexts.fr;
+  document.getElementById('pdfInterpSR').textContent = interpTexts.sr;
+  document.getElementById('pdfInterpTIR').textContent = interpTexts.tir;
+  document.getElementById('pdfOpinion').textContent = opinionText;
+  var now = new Date();
+  document.getElementById('pdfDate').textContent = now.getFullYear()+'년 '+(now.getMonth()+1)+'월 '+now.getDate()+'일 '+now.getHours()+'시 '+now.getMinutes()+'분';
+
+  var page1 = document.getElementById('pdfPage1');
+  var page2 = document.getElementById('pdfPage2');
+  page1.style.left='0'; page1.style.position='fixed'; page1.style.top='0'; page1.style.zIndex='9999';
+  await new Promise(function(r){setTimeout(r,500);});
+
+  try {
+    var jsPDFClass = window.jspdf.jsPDF;
+    var pdf = new jsPDFClass('p','mm','a4');
+    var pw = 210;
+
+    var canvas1 = await html2canvas(page1,{scale:2,useCORS:true,backgroundColor:'#ffffff',width:750,windowWidth:750});
+    var img1 = canvas1.toDataURL('image/jpeg',0.92);
+    var ph1 = (canvas1.height * pw) / canvas1.width;
+    pdf.addImage(img1,'JPEG',0,0,pw,ph1);
+
+    page1.style.left='-9999px';
+    page2.style.left='0'; page2.style.position='fixed'; page2.style.top='0'; page2.style.zIndex='9999';
+    await new Promise(function(r){setTimeout(r,500);});
+
+    var canvas2 = await html2canvas(page2,{scale:2,useCORS:true,backgroundColor:'#ffffff',width:750,windowWidth:750});
+    var img2 = canvas2.toDataURL('image/jpeg',0.92);
+    var ph2 = (canvas2.height * pw) / canvas2.width;
+    pdf.addPage();
+    pdf.addImage(img2,'JPEG',0,0,pw,ph2);
+
+    // iOS Safari: use blob URL + open in new tab (download doesn't work)
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOS) {
+      var blob = pdf.output('blob');
+      var url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      status.textContent = 'PDF가 새 탭에서 열렸습니다. 공유 버튼으로 저장하세요.';
+    } else {
+      pdf.save('산재지표_실습결과_'+studentId+'_'+studentName+'.pdf');
+      status.textContent = 'PDF가 다운로드되었습니다.';
+    }
+  } catch(err) {
+    status.textContent = '';
+    alert('PDF 생성 중 오류가 발생했습니다.\n브라우저의 인쇄 기능을 이용해 주세요.\n(오류: '+err.message+')');
+  } finally {
+    page1.style.left='-9999px'; page1.style.position='absolute'; page1.style.zIndex='';
+    page2.style.left='-9999px'; page2.style.position='absolute'; page2.style.zIndex='';
+    btn.disabled = false;
+    btn.textContent = '📄 결과 PDF 다운로드';
+  }
+}
+
+// Enter key (works on all platforms)
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    var a = document.activeElement;
+    if (!a) return;
+    var id = a.id;
+    if (id === 'studentId' || id === 'studentName') startPractice();
+    else if (id === 'inputHours') checkAnswer('hours');
+    else if (id === 'inputFR') checkAnswer('fr');
+    else if (id === 'inputLoss') checkAnswer('loss');
+    else if (id === 'inputSR') checkAnswer('sr');
+    else if (id === 'inputTIR') checkAnswer('tir');
+  }
+});
+</script>
+</body>
+</html>
